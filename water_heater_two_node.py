@@ -105,8 +105,7 @@ if __name__ == '__main__':
     y1,y2=[],[]
     last_control = this_control = 0
     for i in range(3600):
-        if i==0: pass
-        else:
+        if i != 0:
             if wh.T2<tset-db:
                 this_control = 2
             elif wh.T2>tset: 
@@ -124,7 +123,7 @@ if __name__ == '__main__':
         wh.integrate(0.05, 18, 25, this_control, 1)
         y1.append(wh.T1)
         y2.append(wh.T2)
-    
+
     import matplotlib.pyplot as plt
     import time
     fig=plt.figure()
