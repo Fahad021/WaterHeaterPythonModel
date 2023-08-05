@@ -28,17 +28,14 @@ class WaterHeater():
         Tmixed = 110.0 #F
         self.E_heat = 4.5 #kW
         self.tank_model = 'mixed' #can be either stratified or mixed
-        if self.tank_model == 'stratified':
-            self.n_nodes = 12
-        else:
-            self.n_nodes = 1
+        self.n_nodes = 12 if self.tank_model == 'stratified' else 1
         self.phi = None
         self.gamma = None
         self.ctrl_ue = 0
         self.last_ue = self.ctrl_ue
         self.ctrl_le = 0
         self.last_le = self.ctrl_le
-        
+
         #preserving these voltage things from GridLAB-D in case this model ever makes it back into there
         self.actual_voltage = 240.0 #V
         self.nominal_voltage = 240.0 #V
@@ -48,8 +45,10 @@ class WaterHeater():
         self.unit_num = 0 #From 0-9
         self.days_shift = 180 #From 0-364
         if self.days_shift > 364:
-            self.days_shift = self.days_shift % 365
-            print('Days shifted is greater than 365, will use {} as the number of days shifted'.format(self.days_shift))
+            self.days_shift %= 365
+            print(
+                f'Days shifted is greater than 365, will use {self.days_shift} as the number of days shifted'
+            )
         #TODO: should we allow other location installations (finished basement, crawlspaces, outside?)
         #Load ambient conditions from files
         (Tamb, RHamb, Tmains, hot_draw, mixed_draw) = self.get_annual_conditions(self.days_shift,self.num_bedrooms,self.unit_num)
@@ -59,7 +58,7 @@ class WaterHeater():
         UEF = 0.90 #Uniform Energy Factor
         V = 50.0 #gal
         ratings_test = 'UEF'
-        
+
         (self.wh_UA, self.wh_eta_c, self.wh_vol) = self.calc_wh_properties(ratings_test,FHR,UEF,V)
         self.mCp_node = self.water_Cp * self.water_density * self.wh_vol / self.n_nodes
         m_node = self.water_density * self.wh_vol / self.n_nodes
@@ -82,7 +81,7 @@ class WaterHeater():
             Tlast = self.Tset * np.ones(self.n_nodes)
         else: #mixed tank
             Tlast = self.Tset
-        
+
         #Initialize arrays for the outputs: tank avg temperature, water flow rate, tank consumed energy, tank delivered energy
         Ttank = []
         Vdraw = []
@@ -90,9 +89,9 @@ class WaterHeater():
         Edel = []
         Eloss = []
         outputfile = open((os.path.join(os.path.dirname(__file__),'ElecWHOutput.csv')),'w')
-                          
+
         outputfile.write('T_amb (F), RH_amb (%), Tmains (F), Draw Volume(gal), T_tank (F), E_consumed (Btu), E_delivered (Btu), E_tankloss (Btu) \n')
-        
+
         #Perform minutely calculations
         days_run = 3
         hours_run = 24 * days_run
@@ -100,7 +99,7 @@ class WaterHeater():
             T_amb_ts = float(Tamb[hour])
             RH_amb_ts = float(RHamb[hour])
             Tmains_ts = float(Tmains[hour])
-            print('Starting hour {}'.format(hour + 1))
+            print(f'Starting hour {hour + 1}')
             for min in range(60):
                 draw_ts = (60 * hour + min)
                 draw = hot_draw[draw_ts] + mixed_draw[draw_ts] * ((Tmixed - Tmains_ts) / (Tlast - Tmains_ts)) #draw volume in gal
@@ -116,12 +115,15 @@ class WaterHeater():
                 Eloss_ts = self.wh_UA * (Ttank_ts - T_amb_ts)
                 Edel.append(Edel_ts)
                 Eloss.append(Eloss_ts)
-                outputfile.write(str(T_amb_ts) + ',' + str(RH_amb_ts) + ',' + str(Tmains_ts) + ',' + str(draw) + ',' + str(Ttank_ts) + ',' + str(Econs_ts) + ',' + str(Edel_ts) + ',' + str(Eloss_ts) + '\n')
+                outputfile.write(
+                    f'{T_amb_ts},{str(RH_amb_ts)},{str(Tmains_ts)},{str(draw)},{str(Ttank_ts)},{str(Econs_ts)},{str(Edel_ts)},{str(Eloss_ts)}'
+                    + '\n'
+                )
                 Tlast = Ttank_ts
         self.time_finised = time.time()
         run_time_total = self.time_finised - self.initial_time
-        print('Runs complete! Ran {} days.'.format(days_run))
-        print('Total run time is {} seconds'.format(run_time_total))
+        print(f'Runs complete! Ran {days_run} days.')
+        print(f'Total run time is {run_time_total} seconds')
 
     
     def get_annual_conditions(self,days_shift,n_br,unit):

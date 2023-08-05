@@ -161,10 +161,7 @@ class BatteryInverterFleet(FleetInterface):
         :return res: an instance of FleetResponse
         """
 
-        # call run function with proper inputs
-        FleetResponse = self.run(P_req,Q_req, self.soc, ts)
-
-        return FleetResponse
+        return self.run(P_req,Q_req, self.soc, ts)
 
     def run(self, P_req=[0], Q_req=[0], initSoC=50, dt=1):
         P_req = P_req/self.num_of_devices
@@ -201,10 +198,8 @@ class BatteryInverterFleet(FleetInterface):
             else:
                 q_ach = Q_req
 
-            if p_ach < self.max_power_discharge:
-                p_ach  = self.max_power_discharge
-            if p_ach > self.max_power_charge:
-                p_ach = self.max_power_charge
+            p_ach = max(p_ach, self.max_power_discharge)
+            p_ach = min(p_ach, self.max_power_charge)
             S_req = float(numpy.sqrt(p_ach**2 + q_ach**2))
             if S_req > self.max_apparent_power:
                 q_ach = float(numpy.sqrt(numpy.abs(self.max_apparent_power**2 - p_ach**2)) * numpy.sign(q_ach))
@@ -214,7 +209,7 @@ class BatteryInverterFleet(FleetInterface):
                     q_ach =  float(numpy.sqrt(numpy.abs((p_ach/self.min_pf)**2 - p_ach**2)) * numpy.sign(q_ach))
             # run function for ERM model type
             if self.model_type == 'ERM':
-                
+
                 response.P_injected_max = self.max_power_discharge
                 response.Q_injected_max = float(numpy.sqrt(numpy.abs(self.max_apparent_power**2 - p_ach**2)) )  
 
@@ -254,7 +249,7 @@ class BatteryInverterFleet(FleetInterface):
                 return response
             # run function for ERM model type
             elif self.model_type == 'CRM':
-                
+
                 # convert AC power p_ach to DC power pdc
                 self.pdc = self.coeff_2*(p_ach**2)+self.coeff_1*(p_ach)+self.coeff_0 
                 # convert DC power pdc to DC current
@@ -275,7 +270,7 @@ class BatteryInverterFleet(FleetInterface):
                 self.v1 = self.v1 + dt *( (1/(self.r1*self.c1))*self.v1 + (1/(self.c1))*self.ibat)
                 self.v2 = self.v2 + dt *( (1/(self.r2*self.c2))*self.v1 + (1/(self.c2))*self.ibat)
 
-            
+
                 response.P_injected_max = self.max_power_discharge
                 response.Q_injected_max = float(numpy.sqrt(numpy.abs(self.max_apparent_power**2 - p_ach**2))) 
 
@@ -312,7 +307,7 @@ class BatteryInverterFleet(FleetInterface):
                 self.voc_update()
 
                 self.vbat = (self.v1 + self.v2 + self.voc + self.ibat*self.r0) *self.n_cells
-                    
+
                 p_ach =  p_ach*self.num_of_devices
                 q_ach =  q_ach*self.num_of_devices
 
@@ -348,7 +343,6 @@ class BatteryInverterFleet(FleetInterface):
         else:
             print('Error: open circuit voltage (voc) model type (voc_model_type) is not defined properly')
             print('in config_self.ini set VocModelType=Linear or =CubicSpline')
-        pass
 
     def voc_query(self,SOC): 
         if self.voc_model_type== "Linear":
@@ -440,7 +434,7 @@ class BatteryInverterFleet(FleetInterface):
                 Able = 0
                 Power = 0
                 Current = 0 
-                
+
             Ppos = max(Power,0)
             Pneg = min(Power,0)
             # impose power limits
@@ -453,7 +447,7 @@ class BatteryInverterFleet(FleetInterface):
                 Power = 0
                 Current = 0
 
-        Power = Power*self.num_of_devices
+        Power *= self.num_of_devices
         Cost = Power*self.num_of_devices
         return [Power,Cost,Able]#Power,Cost,Able
 

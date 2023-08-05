@@ -17,20 +17,20 @@ def fleet_test():
         requests.append(req)
 
     # print the initial SoC
-    print("SoC =", str(Fleet.soc))
+    print("SoC =", Fleet.soc)
     FORCAST = Fleet.forecast(requests) # generate a forecast 
-    print("SoC =", str(Fleet.soc))
+    print("SoC =", Fleet.soc)
     # make sure that the forecast function does not change the SoC
 
     # print the forecasted achivable power schedule
     for i in range(97):
         rsp = FORCAST[i]
-        print("P =", str(rsp.P_injected))
+        print("P =", rsp.P_injected)
 
-    # process the requests 
+    # process the requests
     for req in requests:
         Fleet.process_request(req.sim_step, req.P_req, req.Q_req)
-        print("SoC =", str(Fleet.soc)) # show that process_request function updates the SoC
+        print("SoC =", Fleet.soc)
 
 
 def integration_test():
